@@ -1,10 +1,11 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-DATABASE_URL = "postgresql+psycopg2://postgres:123456@localhost:5432/FastAPITraining"
+from app.core.config import settings
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, class_=Session)
+
 
 def get_db():
     db = SessionLocal()
@@ -12,4 +13,3 @@ def get_db():
         yield db
     finally:
         db.close()
-        

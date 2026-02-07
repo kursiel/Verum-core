@@ -1,11 +1,9 @@
-from dataclasses import dataclass
-from fastapi import Header, HTTPException
+from uuid import UUID
 
-@dataclass(frozen=True)
-class TenantContext:
-    tenant_id: str
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-def get_tenant(x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id")) -> TenantContext:
-    if not x_tenant_id:
-        raise HTTPException(status_code=400, detail="Missing X-Tenant-Id")
-    return TenantContext(tenant_id=x_tenant_id)
+
+def set_tenant_context(db: Session, tenant_id: UUID, is_superadmin: bool = False) -> None:
+    db.execute(text("SELECT set_config('app.tenant_id', :tenant_id, true)"), {"tenant_id": str(tenant_id)})
+    db.execute(text("SELECT set_config('app.is_superadmin', :flag, true)"), {"flag": "on" if is_superadmin else "off"})
