@@ -1,23 +1,24 @@
-from sqlalchemy.orm import Session
+from uuid import UUID
+
 from sqlalchemy import select
-from app.models.product import Product
+from sqlalchemy.orm import Session
+
+from app.models import Product
+
 
 class ProductRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self, tenant_id: str, limit: int = 50, offset: int = 0) -> list[Product]:
-        stmt = (
-            select(Product)
-            .where(Product.tenant_id == tenant_id)
-            .order_by(Product.id.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        return list(self.db.execute(stmt).scalars().all())
+    def create(self, product: Product) -> Product:
+        self.db.add(product)
+        self.db.flush()
+        self.db.refresh(product)
+        return product
 
-    def create(self, tenant_id: str, sku: str, name: str, cost: float) -> Product:
-        obj = Product(tenant_id=tenant_id, sku=sku, name=name, cost=cost)
-        self.db.add(obj)
-        self.db.flush()  # para obtener id sin commit todavía
-        return obj
+    def list(self, limit: int, offset: int) -> list[Product]:
+        stmt = select(Product).offset(offset).limit(limit).order_by(Product.created_at.desc())
+        return list(self.db.scalars(stmt))
+
+    def get(self, product_id: UUID) -> Product | None:
+        return self.db.get(Product, product_id)
